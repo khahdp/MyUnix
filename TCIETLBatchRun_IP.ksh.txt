@@ -23,12 +23,10 @@
 # Modification History:                                                       #
 #   Date      Modified By    Description                                      #
 #   --------  -------------  -----------------------------------------------  #
-#   09/11/03  Sohail Ahmed   	Created.				      #				
-#   16/09/05  Hema Sirasapalli	Modified for TCI			      #	
+#   18/June/2015  Khaleel   	Created.				      					  #				
+#   
 #                                                                             #
 ###############################################################################
-
-
 
 
 # FUNCTION TO DISPLAY SCRIPT USAGE.
@@ -120,11 +118,6 @@ fi
 # GENERATE TIMESTAMP
 # ---------------------
 GenTs=`date '+%Y%m%d%H%M%S'`
-
-
-
-
-
 
 cd $OUTPUT_DIR
 
