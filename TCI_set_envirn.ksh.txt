@@ -1,0 +1,209 @@
+#!/bin/ksh -x
+#################################################################################
+#  Program Name            :  set_envirn.ksh                                    #
+#  Language/Shell          :  Korn Shell                                        #
+#  Description             :  This script is responsible for setting up environm#
+#                              ent                                              #
+#  Parameters              :  Environment Name   	                        #
+#  Called                                                                       #
+#  scripts/programs        :  None                                              #
+#  Called from                                                                  #
+#  scripts/programs        :  All Shell Scripts                                 #
+#  Execute mode                                                                 #
+#  (batch/interactive)     :  Batch                                             #
+#  Author                  :  Chaithanya, Infosys Technologies Ltd.             #
+#  Date written            :  03 Aug 2004                                       #
+#  Modification history log :                                                   #
+#                                                                               #
+#  Date      Programmer             Modification                                #
+#  --------  -----------------  ------------------------------------------------#
+# 16-Sep-2005   Hema sirasapalli    Changed for TCI                             #
+# 15-Dec-2006	Arjun.Kandhari	    TCI Publish ETL-Rearch			#
+# 17-Oct-2007	Greg.Eigen	    Increase PRC_REL_ITEM_COUNT & AMZ_ITEM_COUNT#
+#  -----------------------------------------------------------------------------#
+#################################################################################
+
+# Initialize exit status variable FATAL to 1
+FATAL=1
+ 
+# ------------------------------------------------------------------------------
+#       This part checks for the number of arguments passed
+# ------------------------------------------------------------------------------
+
+if [ $# -ne 1 ]
+then
+    echo "Wrong number of Arguments."
+    echo "      "
+    echo "USAGE: `basename $0` [<env>]"
+    exit $FATAL
+fi
+
+# ------------------------------------------------------------------------------
+#   This part sets up the environment based on env variable passed
+# ------------------------------------------------------------------------------
+
+environ=$1
+ 
+if [ ${environ} = 'stage' ]
+then
+    export TCI_PARAM_FILE_PUB=TCIMasterParamFilePub
+ 
+elif [ ${environ} = 'test' ]
+then
+    export TCI_PARAM_FILE_PUB=TCIMasterParamFilePub
+elif [ ${environ} = 'dev' ]
+then
+    export TCI_PARAM_FILE_PUB=TCIMasterParamFilePub
+elif [ ${environ} = 'uat' ]
+then
+    export TCI_PARAM_FILE_PUB=TCIMasterParamFilePub
+elif [ ${environ} = 'prod' ]
+then
+    export TCI_PARAM_FILE_PUB=TCIMasterParamFilePub
+else
+    echo "$environ is an incorrect environment name"
+    exit $FATAL
+fi
+ 
+
+# ------------------------------------------------------------------------------
+#           Set files and paths used
+# ------------------------------------------------------------------------------
+
+export strParamFilePath=/apps/Ascential/Projects/TCI/util
+
+export strMasterParamFile=$strParamFilePath/${TCI_PARAM_FILE_PUB}
+
+export strExecuteJobScript=TCIEtlBatchRun.ksh
+
+export strExecuteJobScriptPath=/apps/Ascential/Projects/TCI/scripts
+
+export PATH=$PATH:/apps/Ascential/DataStage/DSParallel:/apps/Ascential/DataStage/PXEngine/user_osh_wrappers:/usr/bin:/apps/Ascential/DataStage/processmb:/apps/Ascential/DataStage/PXEngine/bin:/bin:/opt/SUNWspro/bin:/usr/sbin:/apps/Ascential/DataStage/DSEngine/bin:/opt/oracle/product/9.2.0.1/bin:/usr/bin::/opt/SUNWspro/bin/:/usr/ccs/bin
+
+export projectName=TCI
+
+export strTempFilePath=/apps/Ascential/Projects/TCI/util
+
+export SCRIPTS_DIR=/apps/Ascential/Projects/TCI/scripts
+
+export OUTPUT_DIR=/work/TCI/data_out
+
+export ARCHIVAL_DIR=/work/TCI/data_archive 
+
+export INPUT_DIR=/work/TCI/data_in
+
+export ERROR_DIR=/work/TCI/data_out
+
+export JPM_SOURCE_FILE_PATH=/work/TCI/data_in
+
+export ARCHIVE_DIR=/work/TCI/data_archive 
+
+export ACCESSORY=/work/TCI/data_out/Accessory
+
+export RELATIONSHIP=/work/TCI/data_out/Relationship
+
+export PRICING=/work/TCI/data_out/Pricing
+
+export RELATIONSHIPDEL=/work/TCI/data_out/RelationshipDel
+
+export REDBOXLOOPCOUNT=1000
+
+export BARTCONCATCOUNT=250
+
+export LOOPCOUNT=1500
+
+export LOOPCOUNTMZRT=1500
+
+export LOOPCOUNTPRICING=2000
+
+export PUBLISDEL=/work/TCI/data_out/PublishDel
+
+export PRODUCT=/work/TCI/data_out/Product
+
+### Used in MozartItemProcess.ksh for looping ( Processing no. of records )
+export MOZ_ITEM_COUNT=1500
+
+export MOZART_INBOUND=/work/TCI/mozart/inbound/mozartitem
+
+export MOZART_ARCHIVE=/work/TCI/mozart/archive/mozartitem
+
+export MOZART_CONNECTION=/work/TCI/mozart/connection/connection.properties
+
+export MOZART_ERROR=/work/TCI/mozart/error/mozartitem
+
+### Used in MozartPricingProcess.ksh for looping ( Processing no. of records )
+export MOZ_PRICE_COUNT=2000
+
+export MOZART_PRICE_INBOUND=/work/TCI/mozart/inbound/mozartprice
+
+export MOZART_PRICE_ARCHIVE=/work/TCI/mozart/archive/mozartprice
+
+export MOZART_PRICE_CONNECTION=/work/TCI/mozart/connection/connection.properties
+
+#export JAVA_PATH=/usr/j2re1.4.2_04/bin/java
+
+export MOZART_PRICE_ERROR=/work/TCI/mozart/error/mozartprice
+
+export PRC_REL_ITEM_COUNT=20000
+
+export AMZ_ITEM_COUNT=20000
+
+export AMZ_ITEM_DEL_COUNT=30000
+
+export AMZ_ATTR_DEL_COUNT=5000
+
+export XML_DIR=/work/TCI/data_out/xmlfile
+
+export MOZ_ARCHIVE_DIR=/work/TCI/data_archive/MOZ
+
+export ITEMDEL=/work/TCI/data_out/ItemDel
+
+#CONTROL-M RETRY PARAMETERS#
+PUBL_RETRYCOUNT=5
+PUBL_SLEEP=30
+
+#CONTROL-M RETRY PARAMETERS For PoReadiness#
+POR_RETRYCOUNT=5
+POR_SLEEP=30
+
+
+#CONTROL-M RETRY PARAMETERS For EPJ#
+EPJ_RETRYCOUNT=5
+EPJ_SLEEP=30
+
+#MOZART LOG DIRECTORY
+MOZ_LOG_DIR=/work/TCI/data_out/logs
+
+#ABN PARAMETERS#
+
+export ABNITEM=/work/TCI/data_out/ABN
+
+export AMZ_ABN_COUNT=30000
+
+
+#CONTROL-M RETRY PARAMETERS – FOR ISI P1#
+
+IAC_MOVE_RETRYCOUNT=10
+IAC_MOVE_SLEEP=30
+
+
+#Adding Parameters for MMBV May Release#
+
+export IMAGE=/work/TCI/data_out/Image
+
+export IMG_ITEM_COUNT=700
+
+IPPRICE_ARCH_DIR=/work/TCI/data_archive/IPPrice
+ARCHV_DAYS=10
+
+
+#IPBATCH PARAMETERS#
+
+IPBATCH_ARCH_DIR=/work/TCI/data_archive/IPBatch
+XML_ARCHV_DAYS=7
+DS_ARCHV_DAYS=7
+MFT_DIR=/work/TCI/data_archive/IPBatch/MFT
+
+
+##END OF SCRIPT##
+

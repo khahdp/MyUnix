@@ -1,0 +1,252 @@
+#!/bin/ksh
+###############################################################################
+#                                                                             #
+# File: EtlBatchRun.ksh                                                       #
+#                                                                             #
+# Description:                                                                #
+#   This UNIX script runs ETL Batch jobs                                      #
+#                                                                             #
+# Parameters:                                                                 #
+#   Optional prameteres                                                       #
+#   -s server    etl server name                                              #
+#   -u user      user name for above server                                   #
+#   -p passwd    Passwd for above user                                        #
+#   -f filename  Filename for parameters in form of Parm=value, one per line  #
+#   -m mode      where mode is NORMAL|RESET|VALIDATE                          #
+#   -w n         number of warnings                                           #
+#   -r n         number of rows                                               #
+#   Compulsory parameters                                                     #
+#    Environment      Name of the Environment                                 #
+#    JobName      Name of the Job                                             #
+#                                                                             #
+#                                                                             #
+# Modification History:                                                       #
+#   Date      Modified By    Description                                      #
+#   --------  -------------  -----------------------------------------------  #
+#   09/11/03  Sohail Ahmed   	Created.				      #				
+#   16/09/05  Hema Sirasapalli	Modified for TCI			      #	
+#                                                                             #
+###############################################################################
+
+
+
+
+# FUNCTION TO DISPLAY SCRIPT USAGE.
+# -----------------------------------
+display_usage()
+{
+ echo >&2
+ echo "\tUsage:  To Run ETL DataStage Job " >&2
+ echo "\tSyntax: `basename $0` Environment JobName" >&2
+ echo "\tEx:     `basename $0` dev TCIJS0000" >&2
+ echo "\tEx:     `basename $0` test TCIJS0000" >&2
+ echo >&2
+ exit 1
+}
+
+
+
+
+# GET ANY OPTIONAL PARAMETERS FROM THE COMMAND LINE. 
+# -----------------------------------------------------
+while getopts :s:u:p:f:m:w:r: Option
+do
+    case $Option in
+        s) Server=$OPTARG;;
+        u) User=$OPTARG;;
+        p) PassWd=$OPTARG;;
+        f) ParmFile=$OPTARG;;
+        m) Mode=$OPTARG;;
+        w) Warn=$OPTARG;;
+        r) Rows=$OPTARG;;
+        :) echo "ERROR: Invalid argument. $OPTARG requires a value."
+           display_usage;;
+
+        ?) echo "ERROR: Unknown option $OPTARG."
+           display_usage;;
+    esac
+done
+
+shift `expr $OPTIND - 1`
+
+
+
+
+# VERIFY NUMBER OF REGULAR PARAMETERS. 
+# ----------------------------------------
+if [ $# -ne 2 ]
+then
+    echo "Error: Wrong numbers of parameters"
+    display_usage
+fi
+
+
+Environment=$1
+JobName=$2
+MAIL_LIST="Nan@target.com"
+LOGFILE="The "$JobName" Sequence aborted"
+
+. /apps/Ascential/DataStage/DSEngine/dsenv
+
+# BUILD THE DSJOB COMMAND BASED ON THE OPTIONAL PARAMETERS                     
+# -----------------------------------------------------------
+Command="dsjob "
+if [ ! -z $Server ]; then
+  if [ -z $User ]; then
+    echo "Error: User is not setup for $Server, so the default server will be used"
+  else
+     if [ -z $PassWd ]; then
+        echo "Error: Passwd is not setup for $User, so the default server and user will be used"
+     else
+         Command="$Command -server $Server -user $User -password PassWd"
+     fi
+   fi
+fi
+
+Command="$Command -run -wait -warn nolimit " #compulsory options
+
+if [ ! -z $Mode ]; then
+ Command="$Command -mode $Mode "
+fi
+
+
+
+# SET THE ENVIRONMENTAL PARAMETERS 
+# -----------------------------------
+. /apps/Ascential/Projects/TCI/scripts/TCI_set_envirn.ksh ${Environment}
+
+
+
+# GENERATE TIMESTAMP
+# ---------------------
+GenTs=`date '+%Y%m%d%H%M%S'`
+
+
+
+
+
+
+cd $OUTPUT_DIR
+
+file=`cat IP.dat`
+echo "$file"
+file1=`cat SEQ_TCIJBIPSeq_Count.txt`
+echo "$file1"
+
+
+
+
+# READ THE PARAMETER FILE BASED ON THE SEQUENCER (JOB NAME) 
+# ------------------------------------------------------------
+ParmFile=${strTempFilePath}/${JobName}_Parameter.txt
+JobParamFile=${JobName}_ParameterFile.txt
+
+echo "Running the job sequencer $JobName"
+
+cat $strMasterParamFile>$ParmFile
+cat $strParamFilePath/$JobParamFile>>$ParmFile
+echo "JPM_ENV="${Environment}>>$ParmFile 
+if [ ! -z $ParmFile ]; then
+ if [ -s $ParmFile ]; then
+cat $ParmFile |
+while read ParmValue
+do
+   ParmList="$ParmList -param $ParmValue "
+done
+
+Command="$Command $ParmList"
+ else
+      echo "Error: Parameter file $ParmFile is either not readable or empty"
+      return 1
+ fi
+fi
+
+if [ ! -z $Warn ]; then
+ Command="$Command -warn $Warn "
+fi
+
+if [ ! -z $Rows ]; then
+ Command="$Command -rows $Rows "
+fi
+
+# Final Command
+
+Command="$Command TCI $JobName"
+echo $Command
+
+echo `dsjob -projectinfo TCI`
+
+
+
+if [ "$file1" != "0" ]; then 
+
+if [ "$file" == "Y" -o "$file" == "y" ]; then 
+#if [ "$file1" != "0" ]; then
+
+$Command
+else
+   echo "Interface Has been Shut down"
+fi
+else
+echo "No items available for processing"
+fi
+
+
+
+
+# Run Final Command
+
+
+echo `dsjob -jobinfo TCI $JobName`
+
+sleep_secs=5
+while  sleep ${sleep_secs} ;
+do
+  status=$(dsjob -jobinfo TCI $JobName 2> /dev/null | grep 'Job Status')
+   
+
+
+# CHECKING THE STATUS OF THE EXECUTED JOB 
+# -------------------------------------------
+  case $status in
+      *STOPPED*)
+       dsjob -logsum -type INFO -max 50 TCI $JobName
+       echo "  "
+       return 1
+         ;;
+      *'RUN FAILED'*)
+       dsjob -logsum -type INFO -max 50 TCI $JobName
+       echo "  "
+       echo ${LOGFILE} | /bin/mailx -s "Job $JobName failed at `date`" $MAIL_LIST
+       return 1
+         ;;
+      *'RUN with WARNINGS'*)
+        dsjob -logsum -type INFO -max 50 TCI $JobName
+        echo "  "
+        return 0
+         ;;
+      *'RUN OK'*)
+        dsjob -logsum -type INFO -max 50 TCI $JobName
+        echo "  "
+        return 0
+         ;;
+      *'NOT RUNNING'*)
+	#dsjob -logsum -type INFO -max 50 TCI $JobName
+	echo "  "
+	exit 1
+        ;;   
+      *'RUNNING'*)
+       #dsjob -logsum -type INFO -max 50 TCI $JobName
+       echo "  "
+       echo $JobName" : ALERT"
+       echo "JOB IS CURRENTLY RUNNING. PLEASE WAIT FOR THE JOB TO FINISH BEFORE INVOKING THE SCRIPT AGAIN."
+       echo "  "
+       return 1
+         ;;
+   esac
+done
+
+echo Job Status: $ReturnCode
+
+
+
